@@ -5,14 +5,17 @@ import lombok.Getter;
 
 /**
  * 字节流中标识序列化和反序列化器
- * @author ziyang
+ *
+ * @author gaoli
  */
 @AllArgsConstructor
 @Getter
 public enum SerializerCode {
 
+    KRYO(0),
     JSON(1),
-    KRYO(0);
+    HESSIAN(2),
+    PROTOBUF(3);
 
     private final int code;
 

@@ -13,6 +13,11 @@ import rpc.exception.SerializeException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Kryo序列化器
+ *
+ * @author gaoli
+ */
 public class KryoSerializer implements CommonSerializer {
 
     private static final Logger logger = LoggerFactory.getLogger(KryoSerializer.class);
@@ -29,7 +34,7 @@ public class KryoSerializer implements CommonSerializer {
     @Override
     public byte[] serialize(Object obj) {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-             Output output = new Output(byteArrayOutputStream)){
+             Output output = new Output(byteArrayOutputStream)) {
             Kryo kryo = kryoThreadLocal.get();
             kryo.writeObject(output, obj);
             kryoThreadLocal.remove();

@@ -7,19 +7,42 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rpc.serializer.JsonSerializer;
-import rpc.serializer.KryoSerializer;
-import rpc.transport.RpcServer;
-import rpc.transport.codec.CommonDecoder;
-import rpc.transport.codec.CommonEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
+import rpc.codec.CommonDecoder;
+import rpc.codec.CommonEncoder;
+import rpc.hook.ShutdownHook;
+import rpc.provider.ServiceProviderImpl;
+import rpc.registry.NacosServiceRegistry;
+import rpc.serializer.CommonSerializer;
+import rpc.transport.AbstractRpcServer;
 
-public class NettyServer implements RpcServer {
-    private static final Logger logger = LoggerFactory.getLogger(NettyServer.class);
+import java.util.concurrent.TimeUnit;
+
+/**
+ * NIO方式服务提供侧
+ *
+ * @author gaoli
+ */
+public class NettyServer extends AbstractRpcServer {
+
+    private final CommonSerializer serializer;
+
+    public NettyServer(String host, int port) {
+        this(host, port, DEFAULT_SERIALIZER);
+    }
+
+    public NettyServer(String host, int port, Integer serializer) {
+        this.host = host;
+        this.port = port;
+        serviceRegistry = new NacosServiceRegistry();
+        serviceProvider = new ServiceProviderImpl();
+        this.serializer = CommonSerializer.getByCode(serializer);
+        scanServices();
+    }
 
     @Override
-    public void start(int port) {
+    public void start() {
+        ShutdownHook.getShutdownHook().addClearAllHook();
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -35,12 +58,13 @@ public class NettyServer implements RpcServer {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new CommonEncoder(new KryoSerializer()));
-                            pipeline.addLast(new CommonDecoder());
-                            pipeline.addLast(new NettyServerHandler());
+                            pipeline.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS))
+                                    .addLast(new CommonEncoder(serializer))
+                                    .addLast(new CommonDecoder())
+                                    .addLast(new NettyServerHandler());
                         }
                     });
-            ChannelFuture future = serverBootstrap.bind(port).sync();
+            ChannelFuture future = serverBootstrap.bind(host, port).sync();
             future.channel().closeFuture().sync();
 
         } catch (InterruptedException e) {

@@ -5,10 +5,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+
+/**
+ * 测试用api的实体
+ *
+ * @author gaoli
+ */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class HelloObject implements Serializable {
+
     private Integer id;
     private String message;
+
 }
